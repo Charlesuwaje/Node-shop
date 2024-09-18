@@ -1,0 +1,5 @@
+NODE_ENV=development
+# NODE_ENV=production
+
+MONGO_URL=
+PORT_NUMBER= 3000
