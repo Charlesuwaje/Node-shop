@@ -19,6 +19,23 @@ const createProduct = asyncHandler(async (req, res) => {
 
 const getProduct = asyncHandler(async (req, res) => {
   try {
+    const { search } = req.query;
+
+    let query = {};
+
+    if (search) {
+      query = {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { category: { $regex: search, $options: "i" } },
+          { price: { $regex: search, $options: "i" } },
+          { quantity: { $regex: search, $options: "i" } },
+
+
+        ],
+      };
+    }
     const Products = await product.find({});
     res.status(200).json(["product featched sucessfully", Products]);
   } catch (error) {

@@ -3,12 +3,30 @@ const express = require("express");
 const user = require("../model/usersModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const {signAccessToken} = require("../helpers/jwt_helper");
 const router = express.Router();
-const asyncHandler = require('express-async-handler')
+const asyncHandler = require("express-async-handler");
 module.exports = router;
 
-const createUser = asyncHandler (async (req, res) => {
+const createUser = asyncHandler(async (req, res) => {
+  const { email, phone_number } = req.body;
   try {
+    const exist = await user.findOne({ email: email });
+    const numberExist = await user.findOne({phone_number:phone_number });
+    if (exist) {
+      return res
+        .status(404)
+        .json({
+          message: "User email already exist please try again .........",
+        });
+    }
+    if (numberExist) {
+        return res
+          .status(404)
+          .json({
+            message: "User phone number  already exist please try again .........",
+          });
+      }
     const createuser = await user.create(req.body);
     res.status(201).json(["user created sucessfully ", createuser]);
   } catch (error) {
@@ -18,33 +36,8 @@ const createUser = asyncHandler (async (req, res) => {
     // res.status(500).json(error.message);
   }
 });
-const login = asyncHandler(async (req, res) => {
-  try {
-    const { email, password, id } = req.body;
 
-    const User = await user.findOne({ email });
-    if (!User) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ userId: user._id.toString() }, "your_jwt_secret", {
-      expiresIn: "1h", // Token expiration time
-    });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    // console.log(error.message);
-    res.status(500);
-    throw new Error(error.message);
-    // res.status(500).json({ message: error.message });
-  }
-});
-const getAllUsers = asyncHandler (async (req, res) => {
+const getAllUsers = asyncHandler(async (req, res) => {
   try {
     const Allusers = await user.find({});
     res
@@ -106,6 +99,41 @@ const updateuser = asyncHandler(async (req, res) => {
     // res.status(500).json({ message: error.message });
   }
 });
+
+const login = asyncHandler(async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    const foundUser = await user.findOne({ email });
+    
+    if (!foundUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(password, foundUser.password);
+    
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: foundUser._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "1h" }
+    );
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+    });
+    
+  } catch (error) {
+     // console.log(error.message);
+    // res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = {
   createUser,
   login,
@@ -114,3 +142,4 @@ module.exports = {
   deleteUser,
   updateuser,
 };
+
