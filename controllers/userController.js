@@ -15,14 +15,14 @@ const createUser = asyncHandler(async (req, res) => {
     const numberExist = await user.findOne({phone_number:phone_number });
     if (exist) {
       return res
-        .status(404)
+        .status(400)
         .json({
           message: "User email already exist please try again .........",
         });
     }
     if (numberExist) {
         return res
-          .status(404)
+          .status(400)
           .json({
             message: "User phone number  already exist please try again .........",
           });
@@ -37,19 +37,52 @@ const createUser = asyncHandler(async (req, res) => {
   }
 });
 
+// const getAllUsers = asyncHandler(async (req, res) => {
+//   try {
+//     const Allusers = await user.find({});
+//     res
+//       .status(200)
+//       .json({ message: `all users sucessfully fetched.`, Allusers });
+//   } catch (error) {
+//     res.status(500);
+//     throw new Error(error.message);
+//     // console.log(error.message);
+//     // res.status(500).json(error.message);
+//   }
+// });
 const getAllUsers = asyncHandler(async (req, res) => {
   try {
-    const Allusers = await user.find({});
-    res
-      .status(200)
-      .json({ message: `all users sucessfully fetched.`, Allusers });
+    const { search } = req.query;
+
+    let query = {};
+
+    if (search) {
+      const searchNumber = parseFloat(search);
+
+      query = {
+        $or: [
+          { email: { $regex: search, $options: "i" } },
+          { first_name: { $regex: search, $options: "i" } },
+          { last_name: { $regex: search, $options: "i" } }
+        ],
+      };
+
+      if (!isNaN(searchNumber)) {
+        query.$or.push({ phone_number: searchNumber });
+      }
+    }
+
+    const Allusers = await user.find(query);
+    res.status(200).json({
+      message: `All users successfully fetched.`,
+      Allusers,
+    });
   } catch (error) {
     res.status(500);
     throw new Error(error.message);
-    // console.log(error.message);
-    // res.status(500).json(error.message);
   }
 });
+
 const getUserById = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
@@ -130,7 +163,9 @@ const login = asyncHandler(async (req, res) => {
   } catch (error) {
      // console.log(error.message);
     // res.status(500).json({ message: error.message });
-    res.status(500).json({ message: error.message });
+    res.status(500)
+    // .json({ message: error.message });
+    throw new Error(error.message);
   }
 });
 
